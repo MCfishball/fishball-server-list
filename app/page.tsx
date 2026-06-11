@@ -40,28 +40,20 @@ export default function Home() {
   }
 
   const fetchPlayers = async () => {
-    const results: Record<string, number> = {};
+    try {
+      const res = await fetch("/api/servers");
+      
+      const data = await res.json();
 
-    for (const server of servers) {
-      try {
-        const res = await fetch(
-          `https://api.mcsrvstat.us/3/${server.ip}`
-        );
+      setOnlinePlayers(data);
 
-        const data = await res.json();
-
-        results[server.ip] = data.players?.online || 0;
-      } catch {
-        results[server.ip] = 0;
-      }
+      localStorage.setItem(
+        "fishballPlayers",
+        JSON.stringify(data)
+      );
+    } catch (err) {
+      console.error(err);
     }
-
-    setOnlinePlayers(results);
-
-    localStorage.setItem(
-      "fishballPlayers",
-      JSON.stringify(results)
-    );
   };
 
   fetchPlayers();
