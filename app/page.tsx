@@ -1,96 +1,142 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type Server = {
-  name: string;
-  ip: string;
-};
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const [search, setSearch] = useState("");
-  const [players, setPlayers] = useState<Record<string, string>>({});
-  const [status, setStatus] = useState<Record<string, boolean>>({});
-
-  const servers: Server[] = [
-    { name: "Hypixel", ip: "mc.hypixel.net" },
-    { name: "PikaNetwork", ip: "play.pika-network.net" },
-    { name: "MineBerry", ip: "mc.mineberry.org" },
-    { name: "Minemen Club", ip: "na.minemen.club" },
-    { name: "CubeCraft", ip: "play.cubecraft.net" },
-    { name: "Jartex Network", ip: "play.jartexnetwork.com" },
-    { name: "ManaCube", ip: "play.manacube.com" },
-    { name: "BlocksMC", ip: "blocksmc.com" },
-    { name: "MCC Island", ip: "play.mccisland.net" },
-    { name: "Gamster", ip: "mc.gamster.org" },
+ const [onlinePlayers, setOnlinePlayers] =
+  useState<Record<string, number>>({});
+  const servers = [
+    {  name: "Hypixel", ip: "mc.hypixel.net", players: "20000+" },
+    { name: "PikaNetwork", ip: "play.pika-network.net", players: "3000+" },
+    {  name: "MineBerry", ip: "mc.mineberry.org", players: "3000+" },
+    {  name: "Minemen Club", ip: "na.minemen.club", players: "1500+" },
+    {  name: "CubeCraft", ip: "play.cubecraft.net", players: "2000+" },
+    {  name: "Jartex Network", ip: "play.jartexnetwork.com", players: "1800+" },
+    {  name: "ManaCube", ip: "play.manacube.com", players: "1200+" },
+    {  name: "BlocksMC", ip: "blocksmc.com", players: "1000+" },
+    {  name: "MCC Island", ip: "play.mccisland.net", players: "5000+" },
+    {  name: "Gamster", ip: "mc.gamster.org", players: "800+" },
+    { name: "Complex Gaming", ip: "hub.mc-complex.com" },
+{ name: "Purple Prison", ip: "purpleprison.net" },
+{ name: "OPBlocks", ip: "play.opblocks.com" },
+{ name: "MoxMC", ip: "moxmc.net" },
+{ name: "InsanityCraft", ip: "play.insanitycraft.net" },
+{ name: "Wild Prison", ip: "play.wildprison.net" },
+{ name: "LemonCloud", ip: "play.lemoncloud.org" },
+{ name: "Performium", ip: "mc.performium.net" },
+{ name: "AkumaMC", ip: "akumamc.net" },
+{ name: "Advancius", ip: "mc.advancius.net" },
+{ name: "PvP Legacy", ip: "play.pvplegacy.net" },
+{ name: "Vultex", ip: "mc.vultex.gg" },
+{ name: "ColdPvP", ip: "coldpvp.com" },
+{ name: "HappyCraft", ip: "happycraft.cc" },
   ];
-
   useEffect(() => {
-    const loadServers = async () => {
-      for (const server of servers) {
-        try {
-          const res = await fetch(
-            `https://api.mcsrvstat.us/3/${server.ip}`
-          );
+  const cached = localStorage.getItem("fishballPlayers");
 
-          const data = await res.json();
+  if (cached) {
+    setOnlinePlayers(JSON.parse(cached));
+  }
 
-          setPlayers((prev) => ({
-            ...prev,
-            [server.ip]: data.players?.online?.toString() ?? "0",
-          }));
+  const fetchPlayers = async () => {
+    const results: Record<string, number> = {};
 
-          setStatus((prev) => ({
-            ...prev,
-            [server.ip]: data.online ?? false,
-          }));
-        } catch {
-          setPlayers((prev) => ({
-            ...prev,
-            [server.ip]: "0",
-          }));
+    for (const server of servers) {
+      try {
+        const res = await fetch(
+          `https://api.mcsrvstat.us/3/${server.ip}`
+        );
 
-          setStatus((prev) => ({
-            ...prev,
-            [server.ip]: false,
-          }));
-        }
+        const data = await res.json();
+
+        results[server.ip] = data.players?.online || 0;
+      } catch {
+        results[server.ip] = 0;
       }
-    };
+    }
 
-    loadServers();
+    setOnlinePlayers(results);
 
-    const interval = setInterval(loadServers, 60000);
+    localStorage.setItem(
+      "fishballPlayers",
+      JSON.stringify(results)
+    );
+  };
 
-    return () => clearInterval(interval);
-  }, []);
+  fetchPlayers();
 
-  const filteredServers = servers
-    .filter((server) => {
-      const keyword = search.toLowerCase();
+  const interval = setInterval(fetchPlayers, 30000);
 
-      return (
-        server.name.toLowerCase().includes(keyword) ||
-        server.ip.toLowerCase().includes(keyword)
-      );
-    })
-    .sort((a, b) => {
-      const playersA = Number(players[a.ip] || 0);
-      const playersB = Number(players[b.ip] || 0);
+  return () => clearInterval(interval);
+}, []);
+ const filteredServers = [...servers]
+  .sort(
+    (a, b) =>
+      (onlinePlayers[b.ip] || 0) -
+      (onlinePlayers[a.ip] || 0)
+  )
+  .filter((server) => {
+    const keyword = search.toLowerCase();
 
-      return playersB - playersA;
-    });
+    return (
+      server.name.toLowerCase().includes(keyword) ||
+      server.ip.toLowerCase().includes(keyword)
+    );
+  });
 
   return (
     <main className="min-h-screen bg-black text-white p-8">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-5xl font-bold text-center mb-2">
-          🐟 FishBall Server List
-        </h1>
+       <div className="flex flex-col items-center mb-4">
 
-        <p className="text-center text-gray-400 mb-8">
-          Live Minecraft Server Tracker
-        </p>
+  <img
+  src="/fishball-logo.PNG"
+  alt="FishBall Logo"
+  className="mx-auto mb-6 w-40 h-40 object-contain drop-shadow-[0_0_25px_rgba(59,130,246,0.7)]"
+/>
+
+  <div className="flex justify-center items-center gap-4">
+    <div className="flex items-center justify-center gap-4 mb-3">
+  <img
+    src="/fishball-logo.PNG"
+    alt="FishBall Logo"
+    className="w-20 h-20 object-contain"
+  />
+
+  <h1 className="text-5xl md:text-6xl font-extrabold text-white">
+    FishBall Server List
+  </h1>
+</div>
+
+    <a
+      href="https://space.bilibili.com/3690976971327606"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bg-pink-500 hover:bg-pink-400 px-4 py-2 rounded-xl font-bold"
+    >
+      MC鱼蛋官方
+    </a>
+  </div>
+
+</div>
+<p className="text-center text-blue-400 text-3xl font-bold mb-8">
+  Top Minecraft Servers
+</p>
+<p className="text-center text-zinc-400 text-lg mb-8">
+  Created & Maintained by
+  <a
+    href="https://space.bilibili.com/3690976971327606"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-pink-400 hover:text-pink-300 font-bold ml-2"
+  >
+    MC鱼蛋
+  </a>
+</p>
+
+       
+
 
         <input
           type="text"
@@ -100,36 +146,50 @@ export default function Home() {
           className="w-full p-4 rounded-xl bg-zinc-900 border border-zinc-700 mb-8"
         />
 
+        {filteredServers.length === 0 && (
+          <div className="text-center text-gray-500 text-xl">
+            没有找到服务器
+          </div>
+        )}
+
         {filteredServers.map((server, index) => (
           <div
-            key={server.ip}
+            
+  key={server.ip}
             className="bg-zinc-900 rounded-2xl p-6 mb-4 flex justify-between items-center hover:bg-zinc-800 transition"
           >
             <div>
               <h2 className="text-2xl font-bold">
                 {index === 0 && "🥇 "}
-                {index === 1 && "🥈 "}
-                {index === 2 && "🥉 "}
-                #{index + 1} {server.name}
+{index === 1 && "🥈 "}
+{index === 2 && "🥉 "}
+#{index + 1} {server.name}
               </h2>
 
-              <p className="text-gray-400">
+              <p className="text-gray-400 mt-1">
                 IP：{server.ip}
               </p>
 
-              <p className="text-green-400 font-semibold">
-                在线人数：
-                {players[server.ip] ?? "加载中..."}
-              </p>
+             <div className="flex items-center gap-2 mt-1">
+  <div
+    className={`w-3 h-3 rounded-full ${
+      onlinePlayers[server.ip] > 0
+        ? "bg-green-500"
+        : "bg-gray-500"
+    }`}
+  />
 
-              <p>
-                状态：
-                {status[server.ip] ? "🟢 在线" : "🔴 离线"}
-              </p>
+  <span className="text-green-400">
+    在线人数：
+    {onlinePlayers[server.ip] === undefined
+      ? " 加载中..."
+      : ` ${onlinePlayers[server.ip]}`}
+  </span>
+</div>
             </div>
 
             <button
-              className="bg-blue-600 hover:bg-blue-500 px-5 py-3 rounded-xl"
+              className="bg-blue-600 hover:bg-blue-500 px-5 py-3 rounded-xl font-bold"
               onClick={() => {
                 navigator.clipboard.writeText(server.ip);
                 alert(`已复制 ${server.ip}`);
